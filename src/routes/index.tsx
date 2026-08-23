@@ -279,12 +279,17 @@ function Fixora() {
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
         <section className="flex min-h-0 flex-col border-r border-border">
           <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
-            <span className="font-mono text-sm text-muted-foreground">main.py</span>
-            <Button variant="ghost" size="sm" onClick={download}>
-              <Download /> Download
-            </Button>
+            <span className="font-mono text-sm text-muted-foreground">{fileName}</span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={handleSuggest} disabled={suggesting}>
+                {suggesting ? <Loader2 className="animate-spin" /> : <Sparkles />} AI Suggest
+              </Button>
+              <Button variant="ghost" size="sm" onClick={download}>
+                <Download /> Download
+              </Button>
+            </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} />
+          <CodeEditor value={code} onChange={setCode} language={language} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}
