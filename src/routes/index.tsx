@@ -31,7 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { fixCode } from "@/lib/fixora.functions";
+import { fixCode, completeCode } from "@/lib/fixora.functions";
+import type { EditorLanguage } from "@/lib/completions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
 
 export const Route = createFileRoute("/")({
@@ -106,8 +107,11 @@ function Fixora() {
     graphSuggestion: string;
   } | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [language, setLanguage] = useState<EditorLanguage>("python");
+  const [suggesting, setSuggesting] = useState(false);
   const lastError = useRef<string | null>(null);
   const callFix = useServerFn(fixCode);
+  const callComplete = useServerFn(completeCode);
 
   const log = useCallback((e: Omit<HistoryEntry, "id" | "time">) => {
     setHistory((h) =>
@@ -171,11 +175,30 @@ function Fixora() {
     await handleRun(aiFix.fixedCode);
   }, [aiFix, handleRun]);
 
+  const handleSuggest = useCallback(async () => {
+    setSuggesting(true);
+    try {
+      const res = await callComplete({ data: { code, language } });
+      if (res.completion) {
+        setCode((c) => c.replace(/\s*$/, "\n") + res.completion + "\n");
+        toast.success("AI predicted the next lines.");
+      } else {
+        toast.info("No suggestion available.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI suggestion failed.");
+    } finally {
+      setSuggesting(false);
+    }
+  }, [callComplete, code, language]);
+
+  const fileName = language === "python" ? "main.py" : language === "c" ? "main.c" : "main.js";
+
   const download = () => {
-    const url = URL.createObjectURL(new Blob([code], { type: "text/x-python" }));
+    const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "main.py";
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -215,7 +238,27 @@ function Fixora() {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => handleRun()} disabled={running}>
+        <Select value={language} onValueChange={(v) => setLanguage(v as EditorLanguage)}>
+          <SelectTrigger className="w-[130px]" aria-label="Select language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="python">Python</SelectItem>
+            <SelectItem value="c">C</SelectItem>
+            <SelectItem value="javascript">JavaScript</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          onClick={() => {
+            if (language !== "python") {
+              toast.info("Execution currently runs Python only — editing works for all languages.");
+              return;
+            }
+            void handleRun();
+          }}
+          disabled={running}
+        >
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
         <Button variant="secondary" onClick={handleFix} disabled={fixing}>
@@ -236,12 +279,17 @@ function Fixora() {
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
         <section className="flex min-h-0 flex-col border-r border-border">
           <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
-            <span className="font-mono text-sm text-muted-foreground">main.py</span>
-            <Button variant="ghost" size="sm" onClick={download}>
-              <Download /> Download
-            </Button>
+            <span className="font-mono text-sm text-muted-foreground">{fileName}</span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={handleSuggest} disabled={suggesting}>
+                {suggesting ? <Loader2 className="animate-spin" /> : <Sparkles />} AI Suggest
+              </Button>
+              <Button variant="ghost" size="sm" onClick={download}>
+                <Download /> Download
+              </Button>
+            </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} />
+          <CodeEditor value={code} onChange={setCode} language={language} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}

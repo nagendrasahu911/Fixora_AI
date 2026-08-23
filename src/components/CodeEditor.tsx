@@ -1,57 +1,72 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { python } from "@codemirror/lang-python";
+import { cpp } from "@codemirror/lang-cpp";
+import { javascript } from "@codemirror/lang-javascript";
+import { autocompletion } from "@codemirror/autocomplete";
+import { linter, lintGutter } from "@codemirror/lint";
+import { EditorView } from "@codemirror/view";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import { makeCompletionSource, lintSource, type EditorLanguage } from "@/lib/completions";
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
+  language?: EditorLanguage;
 }
 
-export function CodeEditor({ value, onChange }: Props) {
-  const taRef = useRef<HTMLTextAreaElement>(null);
-  const gutterRef = useRef<HTMLDivElement>(null);
-  const lines = value.split("\n").length;
+export function CodeEditor({ value, onChange, language = "python" }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    const ta = taRef.current;
-    if (!ta) return;
-    const sync = () => {
-      if (gutterRef.current) gutterRef.current.scrollTop = ta.scrollTop;
-    };
-    ta.addEventListener("scroll", sync);
-    return () => ta.removeEventListener("scroll", sync);
-  }, []);
+  const extensions = useMemo(
+    () => [
+      language === "python" ? python() : language === "c" ? cpp() : javascript(),
+      autocompletion({
+        override: [makeCompletionSource(language)],
+        activateOnTyping: true,
+        icons: false,
+      }),
+      linter(lintSource, { delay: 400 }),
+      lintGutter(),
+      EditorView.lineWrapping,
+      EditorView.theme({
+        "&": { height: "100%", fontSize: "14px", background: "transparent" },
+        ".cm-scroller": { fontFamily: "var(--font-mono, ui-monospace, monospace)" },
+        ".cm-gutters": { background: "transparent", border: "none" },
+        "&.cm-focused": { outline: "none" },
+      }),
+    ],
+    [language],
+  );
+
+  if (!mounted) {
+    return (
+      <pre className="min-h-0 flex-1 overflow-auto bg-editor p-4 font-mono text-sm text-foreground">
+        {value}
+      </pre>
+    );
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-editor font-mono text-sm">
-      <div
-        ref={gutterRef}
-        aria-hidden
-        className="select-none overflow-hidden py-3 pl-4 pr-3 text-right text-editor-gutter/70"
-      >
-        {Array.from({ length: lines }, (_, i) => (
-          <div key={i} className="leading-6">
-            {i + 1}
-          </div>
-        ))}
-      </div>
-      <textarea
-        ref={taRef}
+    <div className="min-h-0 flex-1 overflow-hidden bg-editor [&_.cm-editor]:h-full [&>div]:h-full">
+      <CodeMirror
         value={value}
-        spellCheck={false}
-        aria-label="Python code editor"
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Tab") {
-            e.preventDefault();
-            const ta = e.currentTarget;
-            const s = ta.selectionStart;
-            const next = value.slice(0, s) + "    " + value.slice(ta.selectionEnd);
-            onChange(next);
-            requestAnimationFrame(() => {
-              ta.selectionStart = ta.selectionEnd = s + 4;
-            });
-          }
+        onChange={onChange}
+        theme={vscodeDark}
+        extensions={extensions}
+        basicSetup={{
+          lineNumbers: true,
+          closeBrackets: true,
+          autocompletion: false,
+          highlightActiveLine: true,
+          highlightActiveLineGutter: true,
+          bracketMatching: true,
+          indentOnInput: true,
+          foldGutter: true,
+          tabSize: 4,
         }}
-        className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-4 leading-6 text-foreground outline-none"
+        height="100%"
       />
     </div>
   );
