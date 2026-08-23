@@ -49,7 +49,7 @@ export function CodeEditor({ value, onChange, language = "python" }: Props) {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-editor">
+    <div className="min-h-0 flex-1 overflow-hidden bg-editor [&_.cm-editor]:h-full [&>div]:h-full">
       <CodeMirror
         value={value}
         onChange={onChange}
