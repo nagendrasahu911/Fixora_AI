@@ -175,11 +175,30 @@ function Fixora() {
     await handleRun(aiFix.fixedCode);
   }, [aiFix, handleRun]);
 
+  const handleSuggest = useCallback(async () => {
+    setSuggesting(true);
+    try {
+      const res = await callComplete({ data: { code, language } });
+      if (res.completion) {
+        setCode((c) => c.replace(/\s*$/, "\n") + res.completion + "\n");
+        toast.success("AI predicted the next lines.");
+      } else {
+        toast.info("No suggestion available.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI suggestion failed.");
+    } finally {
+      setSuggesting(false);
+    }
+  }, [callComplete, code, language]);
+
+  const fileName = language === "python" ? "main.py" : language === "c" ? "main.c" : "main.js";
+
   const download = () => {
-    const url = URL.createObjectURL(new Blob([code], { type: "text/x-python" }));
+    const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "main.py";
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
