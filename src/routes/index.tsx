@@ -238,7 +238,27 @@ function Fixora() {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => handleRun()} disabled={running}>
+        <Select value={language} onValueChange={(v) => setLanguage(v as EditorLanguage)}>
+          <SelectTrigger className="w-[130px]" aria-label="Select language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="python">Python</SelectItem>
+            <SelectItem value="c">C</SelectItem>
+            <SelectItem value="javascript">JavaScript</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          onClick={() => {
+            if (language !== "python") {
+              toast.info("Execution currently runs Python only — editing works for all languages.");
+              return;
+            }
+            void handleRun();
+          }}
+          disabled={running}
+        >
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
         <Button variant="secondary" onClick={handleFix} disabled={fixing}>
