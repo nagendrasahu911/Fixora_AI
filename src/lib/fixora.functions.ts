@@ -71,3 +71,28 @@ export const fixCode = createServerFn({ method: "POST" })
       throw error;
     }
   });
+
+const CompleteInput = z.object({
+  code: z.string(),
+  language: z.string().default("python"),
+});
+
+export const completeCode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => CompleteInput.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI is not configured.");
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(key);
+
+    const result = streamText({
+      model: gateway("google/gemini-3.7-flash"),
+      system:
+        `You are an inline code completion engine for ${data.language}. ` +
+        "Predict the next 1-3 lines that logically continue the code. " +
+        "Return ONLY raw code to append, correctly indented, no markdown fences, no explanation.",
+      prompt: data.code,
+    });
+    const text = await result.text;
+    return { completion: text.replace(/^```[a-z]*\n?|```$/g, "").trimEnd() };
+  });
