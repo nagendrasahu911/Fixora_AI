@@ -107,8 +107,11 @@ function Fixora() {
     graphSuggestion: string;
   } | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [language, setLanguage] = useState<EditorLanguage>("python");
+  const [suggesting, setSuggesting] = useState(false);
   const lastError = useRef<string | null>(null);
   const callFix = useServerFn(fixCode);
+  const callComplete = useServerFn(completeCode);
 
   const log = useCallback((e: Omit<HistoryEntry, "id" | "time">) => {
     setHistory((h) =>
