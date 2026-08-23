@@ -31,7 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { fixCode } from "@/lib/fixora.functions";
+import { fixCode, completeCode } from "@/lib/fixora.functions";
+import type { EditorLanguage } from "@/lib/completions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
 
 export const Route = createFileRoute("/")({
