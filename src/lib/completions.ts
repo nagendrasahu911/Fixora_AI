@@ -2,7 +2,7 @@ import type { CompletionContext, CompletionResult, Completion } from "@codemirro
 import type { Diagnostic } from "@codemirror/lint";
 import type { EditorView } from "@codemirror/view";
 
-export type EditorLanguage = "python" | "c" | "javascript";
+export type EditorLanguage = "python";
 
 const kw = (label: string, detail: string, apply?: string): Completion => ({
   label,
@@ -87,44 +87,10 @@ const PLT: Completion[] = [
   "savefig(",
 ].map((s) => fn(s.replace("(", ""), `plt.${s})`, s + ")"));
 
-const JS: Completion[] = [
-  fn("console.log", "log to console", "console.log()"),
-  kw("const", "const declaration"),
-  kw("let", "let declaration"),
-  kw("function", "function declaration"),
-  kw("return", "return value"),
-  kw("import", "import module"),
-  kw("export", "export binding"),
-  kw("for", "for loop"),
-  kw("while", "while loop"),
-  kw("if", "conditional"),
-  fn("Math.random", "random number", "Math.random()"),
-  fn("JSON.stringify", "serialize", "JSON.stringify()"),
-];
-
-const C: Completion[] = [
-  fn("printf", 'printf("%d\\n", x)', 'printf("");'),
-  fn("scanf", "scanf(...)", 'scanf("");'),
-  fn("malloc", "allocate memory", "malloc()"),
-  { label: "#include <stdio.h>", type: "text", detail: "standard I/O" },
-  { label: "#include <stdlib.h>", type: "text", detail: "standard library" },
-  { label: "int main() {\n    \n    return 0;\n}", type: "text", detail: "main function" },
-  kw("int", "integer type"),
-  kw("float", "float type"),
-  kw("double", "double type"),
-  kw("char", "char type"),
-  kw("void", "void type"),
-  kw("for", "for loop"),
-  kw("while", "while loop"),
-  kw("if", "conditional"),
-  kw("struct", "struct type"),
-  kw("return", "return value"),
-];
-
-export function makeCompletionSource(language: EditorLanguage) {
+export function makeCompletionSource(_language: EditorLanguage = "python") {
   return (context: CompletionContext): CompletionResult | null => {
     const dotted = context.matchBefore(/(np|numpy|plt|pyplot)\.\w*/);
-    if (language === "python" && dotted) {
+    if (dotted) {
       const isNp = /^(np|numpy)\./.test(dotted.text);
       return {
         from: dotted.from + dotted.text.indexOf(".") + 1,
@@ -134,7 +100,7 @@ export function makeCompletionSource(language: EditorLanguage) {
     }
     const word = context.matchBefore(/[\w#.]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
-    const options = language === "python" ? PYTHON : language === "javascript" ? JS : C;
+    const options = PYTHON;
     return { from: word.from, options, validFor: /^[\w#.]*$/ };
   };
 }

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
-import { cpp } from "@codemirror/lang-cpp";
-import { javascript } from "@codemirror/lang-javascript";
 import { autocompletion } from "@codemirror/autocomplete";
 import { linter, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
@@ -21,7 +19,7 @@ export function CodeEditor({ value, onChange, language = "python" }: Props) {
 
   const extensions = useMemo(
     () => [
-      language === "python" ? python() : language === "c" ? cpp() : javascript(),
+      python(),
       autocompletion({
         override: [makeCompletionSource(language)],
         activateOnTyping: true,
