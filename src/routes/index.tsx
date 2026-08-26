@@ -32,7 +32,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { fixCode, completeCode } from "@/lib/fixora.functions";
-import type { EditorLanguage } from "@/lib/completions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
 
 export const Route = createFileRoute("/")({
@@ -107,7 +106,6 @@ function Fixora() {
     graphSuggestion: string;
   } | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [language, setLanguage] = useState<EditorLanguage>("python");
   const [suggesting, setSuggesting] = useState(false);
   const lastError = useRef<string | null>(null);
   const callFix = useServerFn(fixCode);
@@ -178,7 +176,7 @@ function Fixora() {
   const handleSuggest = useCallback(async () => {
     setSuggesting(true);
     try {
-      const res = await callComplete({ data: { code, language } });
+      const res = await callComplete({ data: { code, language: "python" } });
       if (res.completion) {
         setCode((c) => c.replace(/\s*$/, "\n") + res.completion + "\n");
         toast.success("AI predicted the next lines.");
@@ -190,9 +188,9 @@ function Fixora() {
     } finally {
       setSuggesting(false);
     }
-  }, [callComplete, code, language]);
+  }, [callComplete, code]);
 
-  const fileName = language === "python" ? "main.py" : language === "c" ? "main.c" : "main.js";
+  const fileName = "main.py";
 
   const download = () => {
     const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
@@ -238,27 +236,7 @@ function Fixora() {
           </SelectContent>
         </Select>
 
-        <Select value={language} onValueChange={(v) => setLanguage(v as EditorLanguage)}>
-          <SelectTrigger className="w-[130px]" aria-label="Select language">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="python">Python</SelectItem>
-            <SelectItem value="c">C</SelectItem>
-            <SelectItem value="javascript">JavaScript</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          onClick={() => {
-            if (language !== "python") {
-              toast.info("Execution currently runs Python only — editing works for all languages.");
-              return;
-            }
-            void handleRun();
-          }}
-          disabled={running}
-        >
+        <Button onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
         <Button variant="secondary" onClick={handleFix} disabled={fixing}>
@@ -289,7 +267,7 @@ function Fixora() {
               </Button>
             </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} language={language} />
+          <CodeEditor value={code} onChange={setCode} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}
