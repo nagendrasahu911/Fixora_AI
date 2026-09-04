@@ -404,6 +404,14 @@ function Fixora() {
           <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
             <span className="font-mono text-sm text-muted-foreground">{fileName}</span>
             <div className="flex items-center gap-1">
+              <Button
+                variant={listening ? "default" : "ghost"}
+                size="sm"
+                onClick={listening ? stopListening : startListening}
+                aria-label="Voice coding"
+              >
+                <Mic /> {listening ? "Listening…" : "Voice"}
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleSuggest} disabled={suggesting}>
                 {suggesting ? <Loader2 className="animate-spin" /> : <Sparkles />} AI Suggest
               </Button>
@@ -412,7 +420,7 @@ function Fixora() {
               </Button>
             </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} />
+          <CodeEditor value={code} onChange={setCode} fetchSuggestion={fetchSuggestion} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}
