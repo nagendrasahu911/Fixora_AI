@@ -132,6 +132,27 @@ function Fixora() {
   const lastError = useRef<string | null>(null);
   const callFix = useServerFn(fixCode);
   const callComplete = useServerFn(completeCode);
+  const callConvert = useServerFn(convertCode);
+  const callVoice = useServerFn(voiceToCode);
+
+  // Code converter
+  const [target, setTarget] = useState<"c" | "cpp" | "java">("c");
+  const [converting, setConverting] = useState(false);
+  const [converted, setConverted] = useState<{ language: string; converted: string } | null>(null);
+
+  // Voice coding
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [generatingVoice, setGeneratingVoice] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // Projects
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [projectName, setProjectName] = useState("My Project");
+
+  useEffect(() => setProjects(loadProjects()), []);
 
   const log = useCallback((e: Omit<HistoryEntry, "id" | "time">) => {
     setHistory((h) =>
