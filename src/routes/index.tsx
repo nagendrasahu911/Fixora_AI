@@ -233,6 +233,89 @@ function Fixora() {
     }
   }, [callComplete, code]);
 
+  const fetchSuggestion = useCallback(
+    async (prefix: string) => {
+      try {
+        const res = await callComplete({ data: { code: prefix, language: "python" } });
+        const first = (res.completion ?? "").split("\n")[0] ?? "";
+        return first.trim() ? first : null;
+      } catch {
+        return null;
+      }
+    },
+    [callComplete],
+  );
+
+  const handleConvert = useCallback(async () => {
+    setConverting(true);
+    try {
+      const res = await callConvert({ data: { code, target } });
+      setConverted(res);
+      setTab("converted");
+      toast.success(`Converted to ${res.language}.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Conversion failed.");
+    } finally {
+      setConverting(false);
+    }
+  }, [callConvert, code, target]);
+
+  const startListening = useCallback(() => {
+    const SR =
+      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast.error("Speech recognition is not supported in this browser.");
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (e: any) => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      setTranscript(text);
+    };
+    rec.onerror = () => {
+      setListening(false);
+      toast.error("Could not hear you — try again.");
+    };
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setTranscript("");
+    setVoiceOpen(true);
+    setListening(true);
+    rec.start();
+  }, []);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop?.();
+    setListening(false);
+  }, []);
+
+  const generateFromVoice = useCallback(async () => {
+    if (!transcript.trim()) return;
+    setGeneratingVoice(true);
+    try {
+      const res = await callVoice({ data: { transcript } });
+      if (res.code) {
+        setCode((c) => c.replace(/\s*$/, "\n") + "\n" + res.code + "\n");
+        setVoiceOpen(false);
+        toast.success("Code inserted from voice.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Voice coding failed.");
+    } finally {
+      setGeneratingVoice(false);
+    }
+  }, [callVoice, transcript]);
+
+  const doSaveProject = useCallback(() => {
+    setProjects(saveProject(projectName, code));
+    setSaveOpen(false);
+    toast.success("Project saved.");
+  }, [projectName, code]);
+
   const fileName = "main.py";
 
   const download = () => {
