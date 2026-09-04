@@ -6,20 +6,23 @@ import { linter, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { makeCompletionSource, lintSource, type EditorLanguage } from "@/lib/completions";
+import { inlineSuggestion, type SuggestFetcher } from "@/lib/inline-suggest";
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
   language?: EditorLanguage;
+  fetchSuggestion?: SuggestFetcher;
 }
 
-export function CodeEditor({ value, onChange, language = "python" }: Props) {
+export function CodeEditor({ value, onChange, language = "python", fetchSuggestion }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const extensions = useMemo(
     () => [
       python(),
+      ...(fetchSuggestion ? inlineSuggestion(fetchSuggestion) : []),
       autocompletion({
         override: [makeCompletionSource(language)],
         activateOnTyping: true,
@@ -35,7 +38,7 @@ export function CodeEditor({ value, onChange, language = "python" }: Props) {
         "&.cm-focused": { outline: "none" },
       }),
     ],
-    [language],
+    [language, fetchSuggestion],
   );
 
   if (!mounted) {

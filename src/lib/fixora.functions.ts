@@ -96,3 +96,54 @@ export const completeCode = createServerFn({ method: "POST" })
     const text = await result.text;
     return { completion: text.replace(/^```[a-z]*\n?|```$/g, "").trimEnd() };
   });
+
+const ConvertInput = z.object({
+  code: z.string(),
+  target: z.enum(["c", "cpp", "java"]),
+});
+
+export const convertCode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ConvertInput.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI is not configured.");
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(key);
+    const names = { c: "C", cpp: "C++", java: "Java" } as const;
+
+    const result = streamText({
+      model: gateway("google/gemini-3.7-flash"),
+      system:
+        `You convert Python source into ${names[data.target]}. ` +
+        "Preserve the exact logic and behaviour. Add all required boilerplate " +
+        "(includes/imports, main function, class wrapper for Java). Use idiomatic, compilable code. " +
+        "Return ONLY the converted source code, no markdown fences, no commentary.",
+      prompt: data.code,
+    });
+    const text = await result.text;
+    return {
+      language: names[data.target],
+      converted: text.replace(/^```[a-z+]*\n?/i, "").replace(/```\s*$/, "").trimEnd(),
+    };
+  });
+
+const VoiceInput = z.object({ transcript: z.string().min(1) });
+
+export const voiceToCode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => VoiceInput.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI is not configured.");
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(key);
+
+    const result = streamText({
+      model: gateway("google/gemini-3.7-flash"),
+      system:
+        "You turn a spoken instruction into clean, runnable Python code. " +
+        "Return ONLY Python code, no markdown fences, no explanation. Keep it minimal.",
+      prompt: data.transcript,
+    });
+    const text = await result.text;
+    return { code: text.replace(/^```[a-z]*\n?/i, "").replace(/```\s*$/, "").trimEnd() };
+  });

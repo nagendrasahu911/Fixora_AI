@@ -41,6 +41,36 @@ const PYTHON: Completion[] = [
   kw("lambda", "anonymous function"),
   { label: "import numpy as np", type: "text", detail: "NumPy import" },
   { label: "import matplotlib.pyplot as plt", type: "text", detail: "Matplotlib import" },
+  {
+    label: "for i in range",
+    type: "text",
+    detail: "for loop over a range",
+    apply: "for i in range(10):\n    ",
+  },
+  {
+    label: "if __name__",
+    type: "text",
+    detail: "main guard",
+    apply: 'if __name__ == "__main__":\n    ',
+  },
+  {
+    label: "if condition",
+    type: "text",
+    detail: "if / else block",
+    apply: "if condition:\n    pass\nelse:\n    pass",
+  },
+  {
+    label: "def function",
+    type: "text",
+    detail: "function definition",
+    apply: "def function_name():\n    ",
+  },
+  {
+    label: "try/except",
+    type: "text",
+    detail: "error handling block",
+    apply: "try:\n    pass\nexcept Exception as e:\n    print(e)",
+  },
 ];
 
 const NP: Completion[] = [
