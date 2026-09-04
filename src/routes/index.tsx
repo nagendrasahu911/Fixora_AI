@@ -574,10 +574,133 @@ function Fixora() {
                   />
                 )}
               </TabsContent>
+
+              <TabsContent value="converted" className="m-0">
+                {!converted ? (
+                  <Empty text='Pick a target language and press "Convert Code" to translate your Python.' />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{converted.language}</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(converted.converted);
+                          toast.success("Copied converted code.");
+                        }}
+                      >
+                        <Copy /> Copy
+                      </Button>
+                    </div>
+                    <pre className="overflow-auto rounded-md bg-editor p-3 font-mono text-sm">
+                      {converted.converted}
+                    </pre>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="projects" className="m-0">
+                {projects.length === 0 ? (
+                  <Empty text='No saved projects yet — press "Save Project" to keep your code.' />
+                ) : (
+                  <ul className="space-y-1.5">
+                    {projects.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium">{p.name}</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {new Date(p.date).toLocaleString()}
+                        </span>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={() => {
+                            setCode(p.code);
+                            toast.success(`Loaded "${p.name}".`);
+                          }}
+                        >
+                          Load
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Delete ${p.name}`}
+                          onClick={() => setProjects(deleteProject(p.id))}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
         </section>
       </main>
+
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save project</DialogTitle>
+            <DialogDescription>Stored in this browser with today&apos;s date.</DialogDescription>
+          </DialogHeader>
+          <Input
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            placeholder="Project name"
+          />
+          <DialogFooter>
+            <Button onClick={doSaveProject}>
+              <Save /> Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={voiceOpen}
+        onOpenChange={(o) => {
+          if (!o) stopListening();
+          setVoiceOpen(o);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Voice coding</DialogTitle>
+            <DialogDescription>
+              {listening
+                ? "Listening… speak your instruction, then stop."
+                : "Review or edit the transcription, then generate Python."}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            rows={4}
+            placeholder='e.g. "create a loop from 1 to 10 and print numbers"'
+          />
+          <DialogFooter>
+            {listening ? (
+              <Button variant="secondary" onClick={stopListening}>
+                Stop listening
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={startListening}>
+                <Mic /> Record again
+              </Button>
+            )}
+            <Button onClick={generateFromVoice} disabled={generatingVoice || !transcript.trim()}>
+              {generatingVoice ? <Loader2 className="animate-spin" /> : <Sparkles />} Generate code
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
