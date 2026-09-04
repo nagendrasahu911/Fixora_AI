@@ -13,6 +13,12 @@ import {
   BarChart3,
   Loader2,
   Check,
+  Repeat2,
+  Mic,
+  Save,
+  FolderOpen,
+  Trash2,
+  Copy,
 } from "lucide-react";
 
 import logo from "@/assets/fixora-logo.png";
@@ -31,8 +37,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { fixCode, completeCode } from "@/lib/fixora.functions";
+import { fixCode, completeCode, convertCode, voiceToCode } from "@/lib/fixora.functions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
+import {
+  loadProjects,
+  saveProject,
+  deleteProject,
+  type SavedProject,
+} from "@/lib/projects";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/")({
   head: () => ({
