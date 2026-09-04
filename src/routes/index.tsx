@@ -437,6 +437,8 @@ function Fixora() {
                 { v: "explanation", i: BookOpen, l: "Explanation" },
                 { v: "history", i: HistoryIcon, l: "History" },
                 { v: "graph", i: BarChart3, l: "Graph Output" },
+                { v: "converted", i: Repeat2, l: "Converted Code" },
+                { v: "projects", i: FolderOpen, l: "My Projects" },
               ].map(({ v, i: Icon, l }) => (
                 <TabsTrigger
                   key={v}
