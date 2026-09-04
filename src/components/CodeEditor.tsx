@@ -38,7 +38,7 @@ export function CodeEditor({ value, onChange, language = "python", fetchSuggesti
         "&.cm-focused": { outline: "none" },
       }),
     ],
-    [language],
+    [language, fetchSuggestion],
   );
 
   if (!mounted) {
