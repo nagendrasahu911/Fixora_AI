@@ -368,6 +368,25 @@ function Fixora() {
         <Button variant="secondary" onClick={handleFix} disabled={fixing}>
           {fixing ? <Loader2 className="animate-spin" /> : <Wand2 />} Fix My Code
         </Button>
+        <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
+          <SelectTrigger className="w-[140px]" aria-label="Convert target language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="c">Python → C</SelectItem>
+            <SelectItem value="cpp">Python → C++</SelectItem>
+            <SelectItem value="java">Python → Java</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="secondary" onClick={handleConvert} disabled={converting}>
+          {converting ? <Loader2 className="animate-spin" /> : <Repeat2 />} Convert Code
+        </Button>
+        <Button variant="secondary" onClick={() => setSaveOpen(true)}>
+          <Save /> Save Project
+        </Button>
+        <Button variant="ghost" onClick={() => setTab("projects")}>
+          <FolderOpen /> My Projects
+        </Button>
         <Button
           variant="ghost"
           onClick={() => {
