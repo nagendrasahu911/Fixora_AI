@@ -29,10 +29,10 @@ class GhostWidget extends WidgetType {
   constructor(readonly text: string) {
     super();
   }
-  eq(other: GhostWidget) {
+  override eq(other: GhostWidget) {
     return other.text === this.text;
   }
-  toDOM() {
+  override toDOM() {
     const span = document.createElement("span");
     span.className = "cm-ghost-text";
     span.textContent = this.text;
