@@ -202,6 +202,18 @@ function Fixora() {
           ok: !res.error,
           label: res.error ? "Run failed" : `Ran code${res.images.length ? " + graph" : ""}`,
         });
+        if (res.error) {
+          hadError.current = true;
+        } else {
+          const mult = challenge ? 2 : 1;
+          if (hadError.current && editedByUser.current) {
+            celebrate(award("manual-fix", mult), "you fixed it yourself!");
+            hadError.current = false;
+          } else {
+            celebrate(award("run", mult), "code ran successfully");
+          }
+          editedByUser.current = false;
+        }
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not run the code.");
       } finally {
