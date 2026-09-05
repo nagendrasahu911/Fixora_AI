@@ -397,6 +397,36 @@ function Fixora() {
           </p>
         </div>
 
+        <div className="flex min-w-[190px] flex-col gap-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+          <div className="flex items-center gap-2 text-xs">
+            <Trophy className="size-3.5 text-primary" />
+            <span className="font-mono font-semibold">Lv {levelOf(game.xp).level}</span>
+            <span className="text-muted-foreground">{game.xp} XP</span>
+            <span className="ml-auto flex items-center gap-1 text-muted-foreground">
+              <Flame className="size-3.5 text-primary" />
+              {game.streak}d
+            </span>
+          </div>
+          <Progress value={levelOf(game.xp).percent} className="h-1" />
+          <div className="flex flex-wrap gap-1">
+            {BADGES.filter((b) => game.badges.includes(b.name)).map((b) => (
+              <Badge key={b.name} variant="secondary" className="text-[10px]" title={b.hint}>
+                {b.name}
+              </Badge>
+            ))}
+            {game.badges.length === 0 && (
+              <span className="text-[10px] text-muted-foreground">No badges yet</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+          <Swords className="size-3.5 text-primary" />
+          <Switch id="challenge" checked={challenge} onCheckedChange={setChallenge} />
+          <Label htmlFor="challenge" className="text-xs">
+            Challenge Mode
+          </Label>
+        </div>
+
         <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
           <Switch id="graph" checked={enableGraph} onCheckedChange={setEnableGraph} />
           <Label htmlFor="graph" className="text-xs">
