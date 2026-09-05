@@ -251,7 +251,18 @@ function Fixora() {
     } finally {
       setFixing(false);
     }
-  }, [code, graphType, enableGraph, callFix, log]);
+  }, [code, graphType, enableGraph, callFix, log, challenge, award, celebrate]);
+
+  const onTabChange = useCallback(
+    (v: string) => {
+      setTab(v);
+      if (v === "explanation" && aiFix && !explanationRewarded.current) {
+        explanationRewarded.current = true;
+        celebrate(award("explanation"), "explanation read");
+      }
+    },
+    [aiFix, award, celebrate],
+  );
 
   const applyFix = useCallback(async () => {
     if (!aiFix) return;
