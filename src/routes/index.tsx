@@ -135,6 +135,26 @@ function Fixora() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const lastError = useRef<string | null>(null);
+
+  // Gamification
+  const { state: game, award } = useGamification();
+  const [challenge, setChallenge] = useState(false);
+  const editedByUser = useRef(false);
+  const hadError = useRef(false);
+  const explanationRewarded = useRef(false);
+
+  const celebrate = useCallback(
+    (res: { gained: number; unlocked: string[] }, what: string) => {
+      toast.success(`+${res.gained} XP · ${what}`);
+      res.unlocked.forEach((b) => toast.success(`🏅 Badge unlocked: ${b}`));
+    },
+    [],
+  );
+
+  const onCodeChange = useCallback((next: string) => {
+    editedByUser.current = true;
+    setCode(next);
+  }, []);
   const callFix = useServerFn(fixCode);
   const callComplete = useServerFn(completeCode);
   const callConvert = useServerFn(convertCode);
