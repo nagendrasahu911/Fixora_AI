@@ -449,7 +449,7 @@ function Fixora() {
         <Button onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
-        <Button variant="secondary" onClick={handleFix} disabled={fixing}>
+        <Button variant="secondary" onClick={handleFix} disabled={fixing || challenge}>
           {fixing ? <Loader2 className="animate-spin" /> : <Wand2 />} Fix My Code
         </Button>
         <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
@@ -504,7 +504,7 @@ function Fixora() {
               </Button>
             </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} fetchSuggestion={fetchSuggestion} />
+          <CodeEditor value={code} onChange={onCodeChange} fetchSuggestion={fetchSuggestion} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}
@@ -513,7 +513,7 @@ function Fixora() {
         </section>
 
         <section className="flex min-h-0 flex-col">
-          <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
+          <Tabs value={tab} onValueChange={onTabChange} className="flex min-h-0 flex-1 flex-col gap-0">
             <TabsList className="h-auto w-full justify-start rounded-none border-b border-border bg-card p-0">
               {[
                 { v: "console", i: Terminal, l: "Console" },
