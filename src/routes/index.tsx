@@ -241,7 +241,9 @@ function Fixora() {
       });
       setAiFix(res);
       setTab("aifix");
+      explanationRewarded.current = false;
       log({ kind: "fix", ok: true, label: "AI fix generated" });
+      celebrate(award("auto-fix"), "AI fix used");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "AI request failed.";
       toast.error(msg.includes("402") ? "AI credits exhausted — add credits to continue." : msg);
