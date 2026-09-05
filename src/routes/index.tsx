@@ -19,6 +19,9 @@ import {
   FolderOpen,
   Trash2,
   Copy,
+  Trophy,
+  Flame,
+  Swords,
 } from "lucide-react";
 
 import logo from "@/assets/fixora-logo.png";
