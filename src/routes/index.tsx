@@ -19,6 +19,9 @@ import {
   FolderOpen,
   Trash2,
   Copy,
+  Trophy,
+  Flame,
+  Swords,
 } from "lucide-react";
 
 import logo from "@/assets/fixora-logo.png";
@@ -55,6 +58,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useGamification, BADGES, levelOf } from "@/lib/gamification";
+import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -130,6 +135,26 @@ function Fixora() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const lastError = useRef<string | null>(null);
+
+  // Gamification
+  const { state: game, award } = useGamification();
+  const [challenge, setChallenge] = useState(false);
+  const editedByUser = useRef(false);
+  const hadError = useRef(false);
+  const explanationRewarded = useRef(false);
+
+  const celebrate = useCallback(
+    (res: { gained: number; unlocked: string[] }, what: string) => {
+      toast.success(`+${res.gained} XP · ${what}`);
+      res.unlocked.forEach((b) => toast.success(`🏅 Badge unlocked: ${b}`));
+    },
+    [],
+  );
+
+  const onCodeChange = useCallback((next: string) => {
+    editedByUser.current = true;
+    setCode(next);
+  }, []);
   const callFix = useServerFn(fixCode);
   const callComplete = useServerFn(completeCode);
   const callConvert = useServerFn(convertCode);
@@ -177,6 +202,18 @@ function Fixora() {
           ok: !res.error,
           label: res.error ? "Run failed" : `Ran code${res.images.length ? " + graph" : ""}`,
         });
+        if (res.error) {
+          hadError.current = true;
+        } else {
+          const mult = challenge ? 2 : 1;
+          if (hadError.current && editedByUser.current) {
+            celebrate(award("manual-fix", mult), "you fixed it yourself!");
+            hadError.current = false;
+          } else {
+            celebrate(award("run", mult), "code ran successfully");
+          }
+          editedByUser.current = false;
+        }
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not run the code.");
       } finally {
@@ -184,10 +221,14 @@ function Fixora() {
         setStatus(null);
       }
     },
-    [code, enableGraph, graphType, log],
+    [code, enableGraph, graphType, log, challenge, award, celebrate],
   );
 
   const handleFix = useCallback(async () => {
+    if (challenge) {
+      toast.info("Challenge Mode is on — try fixing it yourself for double XP.");
+      return;
+    }
     setFixing(true);
     try {
       const res = await callFix({
@@ -200,7 +241,9 @@ function Fixora() {
       });
       setAiFix(res);
       setTab("aifix");
+      explanationRewarded.current = false;
       log({ kind: "fix", ok: true, label: "AI fix generated" });
+      celebrate(award("auto-fix"), "AI fix used");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "AI request failed.";
       toast.error(msg.includes("402") ? "AI credits exhausted — add credits to continue." : msg);
@@ -208,7 +251,18 @@ function Fixora() {
     } finally {
       setFixing(false);
     }
-  }, [code, graphType, enableGraph, callFix, log]);
+  }, [code, graphType, enableGraph, callFix, log, challenge, award, celebrate]);
+
+  const onTabChange = useCallback(
+    (v: string) => {
+      setTab(v);
+      if (v === "explanation" && aiFix && !explanationRewarded.current) {
+        explanationRewarded.current = true;
+        celebrate(award("explanation"), "explanation read");
+      }
+    },
+    [aiFix, award, celebrate],
+  );
 
   const applyFix = useCallback(async () => {
     if (!aiFix) return;
@@ -343,6 +397,36 @@ function Fixora() {
           </p>
         </div>
 
+        <div className="flex min-w-[190px] flex-col gap-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+          <div className="flex items-center gap-2 text-xs">
+            <Trophy className="size-3.5 text-primary" />
+            <span className="font-mono font-semibold">Lv {levelOf(game.xp).level}</span>
+            <span className="text-muted-foreground">{game.xp} XP</span>
+            <span className="ml-auto flex items-center gap-1 text-muted-foreground">
+              <Flame className="size-3.5 text-primary" />
+              {game.streak}d
+            </span>
+          </div>
+          <Progress value={levelOf(game.xp).percent} className="h-1" />
+          <div className="flex flex-wrap gap-1">
+            {BADGES.filter((b) => game.badges.includes(b.name)).map((b) => (
+              <Badge key={b.name} variant="secondary" className="text-[10px]" title={b.hint}>
+                {b.name}
+              </Badge>
+            ))}
+            {game.badges.length === 0 && (
+              <span className="text-[10px] text-muted-foreground">No badges yet</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+          <Swords className="size-3.5 text-primary" />
+          <Switch id="challenge" checked={challenge} onCheckedChange={setChallenge} />
+          <Label htmlFor="challenge" className="text-xs">
+            Challenge Mode
+          </Label>
+        </div>
+
         <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
           <Switch id="graph" checked={enableGraph} onCheckedChange={setEnableGraph} />
           <Label htmlFor="graph" className="text-xs">
@@ -365,7 +449,7 @@ function Fixora() {
         <Button onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
-        <Button variant="secondary" onClick={handleFix} disabled={fixing}>
+        <Button variant="secondary" onClick={handleFix} disabled={fixing || challenge}>
           {fixing ? <Loader2 className="animate-spin" /> : <Wand2 />} Fix My Code
         </Button>
         <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
@@ -420,7 +504,7 @@ function Fixora() {
               </Button>
             </div>
           </div>
-          <CodeEditor value={code} onChange={setCode} fetchSuggestion={fetchSuggestion} />
+          <CodeEditor value={code} onChange={onCodeChange} fetchSuggestion={fetchSuggestion} />
           {status && (
             <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
               {status}
@@ -429,7 +513,7 @@ function Fixora() {
         </section>
 
         <section className="flex min-h-0 flex-col">
-          <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
+          <Tabs value={tab} onValueChange={onTabChange} className="flex min-h-0 flex-1 flex-col gap-0">
             <TabsList className="h-auto w-full justify-start rounded-none border-b border-border bg-card p-0">
               {[
                 { v: "console", i: Terminal, l: "Console" },
