@@ -221,10 +221,14 @@ function Fixora() {
         setStatus(null);
       }
     },
-    [code, enableGraph, graphType, log],
+    [code, enableGraph, graphType, log, challenge, award, celebrate],
   );
 
   const handleFix = useCallback(async () => {
+    if (challenge) {
+      toast.info("Challenge Mode is on — try fixing it yourself for double XP.");
+      return;
+    }
     setFixing(true);
     try {
       const res = await callFix({
