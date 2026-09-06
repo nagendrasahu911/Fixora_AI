@@ -388,7 +388,7 @@ function Fixora() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Toaster />
-      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3">
+      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 shadow-[0_10px_40px_-30px_oklch(0.63_0.22_295)]">
         <img src={logo} alt="Fixora AI logo" width={40} height={40} className="h-10 w-10" />
         <div className="mr-auto">
           <h1 className="font-mono text-lg font-bold tracking-tight brand-text">Fixora AI</h1>
@@ -397,20 +397,20 @@ function Fixora() {
           </p>
         </div>
 
-        <div className="flex min-w-[190px] flex-col gap-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+        <div className="neon-frame flex min-w-[190px] flex-col gap-1 px-3 py-1.5">
           <div className="flex items-center gap-2 text-xs">
             <Trophy className="size-3.5 text-primary" />
             <span className="font-mono font-semibold">Lv {levelOf(game.xp).level}</span>
             <span className="text-muted-foreground">{game.xp} XP</span>
             <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-              <Flame className="size-3.5 text-primary" />
+              <Flame className="size-3.5 flame-pulse" />
               {game.streak}d
             </span>
           </div>
           <Progress value={levelOf(game.xp).percent} className="h-1" />
           <div className="flex flex-wrap gap-1">
             {BADGES.filter((b) => game.badges.includes(b.name)).map((b) => (
-              <Badge key={b.name} variant="secondary" className="text-[10px]" title={b.hint}>
+              <Badge key={b.name} variant="secondary" className="badge-glow text-[10px]" title={b.hint}>
                 {b.name}
               </Badge>
             ))}
@@ -419,7 +419,7 @@ function Fixora() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+        <div className="neon-frame flex items-center gap-2 px-3 py-1.5">
           <Swords className="size-3.5 text-primary" />
           <Switch id="challenge" checked={challenge} onCheckedChange={setChallenge} />
           <Label htmlFor="challenge" className="text-xs">
@@ -427,7 +427,7 @@ function Fixora() {
           </Label>
         </div>
 
-        <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-3 py-1.5">
+        <div className="neon-frame flex items-center gap-2 px-3 py-1.5">
           <Switch id="graph" checked={enableGraph} onCheckedChange={setEnableGraph} />
           <Label htmlFor="graph" className="text-xs">
             Enable Graph
@@ -446,10 +446,10 @@ function Fixora() {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => void handleRun()} disabled={running}>
+        <Button className="glow-run" onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
-        <Button variant="secondary" onClick={handleFix} disabled={fixing || challenge}>
+        <Button variant="secondary" className="glow-primary" onClick={handleFix} disabled={fixing || challenge}>
           {fixing ? <Loader2 className="animate-spin" /> : <Wand2 />} Fix My Code
         </Button>
         <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
@@ -527,7 +527,7 @@ function Fixora() {
                 <TabsTrigger
                   key={v}
                   value={v}
-                  className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                  className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm transition-all data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:drop-shadow-[0_0_10px_oklch(0.63_0.22_295_/_70%)]"
                 >
                   <Icon className="size-4" /> {l}
                 </TabsTrigger>
@@ -535,7 +535,7 @@ function Fixora() {
             </TabsList>
 
             <div className="min-h-0 flex-1 overflow-auto p-4">
-              <TabsContent value="console" className="m-0">
+              <TabsContent value="console" className="fade-in-up m-0">
                 {!result ? (
                   <Empty text="Press Run to execute your Python in the browser." />
                 ) : (
@@ -562,7 +562,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="aifix" className="m-0">
+              <TabsContent value="aifix" className="fade-in-up m-0">
                 {!aiFix ? (
                   <Empty text='Run into an error? Hit "Fix My Code" and Fixora AI will return corrected Python.' />
                 ) : (
@@ -592,7 +592,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="explanation" className="m-0">
+              <TabsContent value="explanation" className="fade-in-up m-0">
                 {!aiFix ? (
                   <Empty text="Explanations appear here after an AI fix." />
                 ) : (
@@ -608,7 +608,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="history" className="m-0">
+              <TabsContent value="history" className="fade-in-up m-0">
                 {history.length === 0 ? (
                   <Empty text="Your runs and fixes will be listed here." />
                 ) : (
@@ -632,7 +632,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="graph" className="m-0">
+              <TabsContent value="graph" className="fade-in-up m-0">
                 {!enableGraph ? (
                   <Empty text='Graphs are turned off. Flip "Enable Graph" to visualize your data.' />
                 ) : result?.images.length ? (
@@ -645,7 +645,7 @@ function Fixora() {
                         key={i}
                         src={`data:image/png;base64,${img}`}
                         alt={`Generated chart ${i + 1}`}
-                        className="w-full rounded-md border border-border bg-white"
+                        className="fade-in-up w-full rounded-xl border border-border bg-white shadow-[0_0_36px_-14px_oklch(0.73_0.14_205_/_80%)] transition-transform duration-300 hover:scale-[1.01]"
                       />
                     ))}
                   </div>
@@ -659,7 +659,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="converted" className="m-0">
+              <TabsContent value="converted" className="fade-in-up m-0">
                 {!converted ? (
                   <Empty text='Pick a target language and press "Convert Code" to translate your Python.' />
                 ) : (
@@ -685,7 +685,7 @@ function Fixora() {
                 )}
               </TabsContent>
 
-              <TabsContent value="projects" className="m-0">
+              <TabsContent value="projects" className="fade-in-up m-0">
                 {projects.length === 0 ? (
                   <Empty text='No saved projects yet — press "Save Project" to keep your code.' />
                 ) : (
