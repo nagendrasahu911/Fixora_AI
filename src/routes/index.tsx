@@ -386,9 +386,20 @@ function Fixora() {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-background">
+      <div className="aurora-bg" aria-hidden="true">
+        <span className="aurora-blob left-[-8rem] top-[-6rem] size-[26rem] bg-primary/40" />
+        <span
+          className="aurora-blob right-[-6rem] top-[10%] size-[22rem] bg-accent/40"
+          style={{ animationDelay: "-7s" }}
+        />
+        <span
+          className="aurora-blob bottom-[-10rem] left-[35%] size-[24rem] bg-primary/25"
+          style={{ animationDelay: "-14s" }}
+        />
+      </div>
       <Toaster />
-      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 shadow-[0_10px_40px_-30px_oklch(0.63_0.22_295)]">
+      <header className="relative z-10 flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 shadow-[0_10px_40px_-30px_oklch(0.63_0.22_295)]">
         <img src={logo} alt="Fixora AI logo" width={40} height={40} className="h-10 w-10" />
         <div className="mr-auto">
           <h1 className="font-mono text-lg font-bold tracking-tight brand-text">Fixora AI</h1>
@@ -397,17 +408,18 @@ function Fixora() {
           </p>
         </div>
 
-        <div className="neon-frame flex min-w-[190px] flex-col gap-1 px-3 py-1.5">
+        <div className="neon-frame hover-lift flex min-w-[210px] items-center gap-3 px-3 py-1.5">
+          <XpRing percent={levelOf(game.xp).percent} level={levelOf(game.xp).level} />
+          <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 text-xs">
             <Trophy className="size-3.5 text-primary" />
-            <span className="font-mono font-semibold">Lv {levelOf(game.xp).level}</span>
             <span className="text-muted-foreground">{game.xp} XP</span>
             <span className="ml-auto flex items-center gap-1 text-muted-foreground">
               <Flame className="size-3.5 flame-pulse" />
               {game.streak}d
             </span>
           </div>
-          <Progress value={levelOf(game.xp).percent} className="h-1" />
+          <Progress value={levelOf(game.xp).percent} className="h-1 w-[130px]" />
           <div className="flex flex-wrap gap-1">
             {BADGES.filter((b) => game.badges.includes(b.name)).map((b) => (
               <Badge key={b.name} variant="secondary" className="badge-glow text-[10px]" title={b.hint}>
@@ -417,6 +429,7 @@ function Fixora() {
             {game.badges.length === 0 && (
               <span className="text-[10px] text-muted-foreground">No badges yet</span>
             )}
+          </div>
           </div>
         </div>
         <div className="neon-frame flex items-center gap-2 px-3 py-1.5">
@@ -446,10 +459,10 @@ function Fixora() {
           </SelectContent>
         </Select>
 
-        <Button className="glow-run" onClick={() => void handleRun()} disabled={running}>
+        <Button className="glow-run ripple" onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
         </Button>
-        <Button variant="secondary" className="glow-primary" onClick={handleFix} disabled={fixing || challenge}>
+        <Button variant="secondary" className="glow-fix ripple" onClick={handleFix} disabled={fixing || challenge}>
           {fixing ? <Loader2 className="animate-spin" /> : <Wand2 />} Fix My Code
         </Button>
         <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
@@ -462,10 +475,10 @@ function Fixora() {
             <SelectItem value="java">Python → Java</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="secondary" onClick={handleConvert} disabled={converting}>
+        <Button variant="secondary" className="glow-convert ripple" onClick={handleConvert} disabled={converting}>
           {converting ? <Loader2 className="animate-spin" /> : <Repeat2 />} Convert Code
         </Button>
-        <Button variant="secondary" onClick={() => setSaveOpen(true)}>
+        <Button variant="secondary" className="ripple" onClick={() => setSaveOpen(true)}>
           <Save /> Save Project
         </Button>
         <Button variant="ghost" onClick={() => setTab("projects")}>
@@ -483,8 +496,8 @@ function Fixora() {
         </Button>
       </header>
 
-      <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-        <section className="flex min-h-0 flex-col border-r border-border">
+      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
+        <section className="hover-lift flex min-h-0 flex-col border-r border-border">
           <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
             <span className="font-mono text-sm text-muted-foreground">{fileName}</span>
             <div className="flex items-center gap-1">
@@ -506,15 +519,15 @@ function Fixora() {
           </div>
           <CodeEditor value={code} onChange={onCodeChange} fetchSuggestion={fetchSuggestion} />
           {status && (
-            <div className="border-t border-border bg-card px-4 py-1.5 text-xs text-primary">
+            <div className="shimmer border-t border-border px-4 py-1.5 text-xs text-primary">
               {status}
             </div>
           )}
         </section>
 
-        <section className="flex min-h-0 flex-col">
+        <section className="hover-lift flex min-h-0 flex-col">
           <Tabs value={tab} onValueChange={onTabChange} className="flex min-h-0 flex-1 flex-col gap-0">
-            <TabsList className="h-auto w-full justify-start rounded-none border-b border-border bg-card p-0">
+            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-none border-b border-border bg-card p-0">
               {[
                 { v: "console", i: Terminal, l: "Console" },
                 { v: "aifix", i: Sparkles, l: "AI Fix" },
@@ -785,6 +798,39 @@ function Fixora() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function XpRing({ percent, level }: { percent: number; level: number }) {
+  const r = 15;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative size-10 shrink-0">
+      <svg viewBox="0 0 36 36" className="size-10 -rotate-90">
+        <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3" className="stroke-secondary" />
+        <circle
+          cx="18"
+          cy="18"
+          r={r}
+          fill="none"
+          strokeWidth="3"
+          strokeLinecap="round"
+          stroke="url(#xpGrad)"
+          strokeDasharray={c}
+          strokeDashoffset={c - (Math.min(100, percent) / 100) * c}
+          style={{ transition: "stroke-dashoffset 600ms ease" }}
+        />
+        <defs>
+          <linearGradient id="xpGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="oklch(0.63 0.22 295)" />
+            <stop offset="100%" stopColor="oklch(0.73 0.14 205)" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span className="absolute inset-0 grid place-items-center font-mono text-[11px] font-bold">
+        {level}
+      </span>
     </div>
   );
 }
