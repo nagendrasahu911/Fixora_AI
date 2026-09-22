@@ -203,6 +203,7 @@ function Fixora() {
   const callComplete = useServerFn(completeCode);
   const callConvert = useServerFn(convertCode);
   const callVoice = useServerFn(voiceToCode);
+  const callRunNative = useServerFn(runNative);
 
   // Code converter
   const [target, setTarget] = useState<"c" | "cpp" | "java">("c");
