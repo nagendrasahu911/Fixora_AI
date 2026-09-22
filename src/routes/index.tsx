@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { fixCode, completeCode, convertCode, voiceToCode } from "@/lib/fixora.functions";
+import { runNative, type NativeRunResult, type RunLanguage } from "@/lib/run.functions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
 import {
   loadProjects,
@@ -116,6 +117,46 @@ const GRAPH_TYPES: { value: GraphType; label: string }[] = [
   { value: "pie", label: "Pie" },
   { value: "box", label: "Box" },
 ];
+
+const LANGUAGES: { value: RunLanguage; label: string; file: string }[] = [
+  { value: "python", label: "Python", file: "main.py" },
+  { value: "c", label: "C", file: "main.c" },
+  { value: "cpp", label: "C++", file: "main.cpp" },
+  { value: "java", label: "Java", file: "Main.java" },
+];
+
+const STARTERS: Record<RunLanguage, string> = {
+  python: STARTER,
+  c: `#include <stdio.h>
+
+int main() {
+    for (int i = 1; i <= 5; i++) {
+        printf("Number: %d\\n", i);
+    }
+    return 0;
+}
+`,
+  cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    for (int i = 1; i <= 5; i++) {
+        cout << "Number: " << i << endl;
+    }
+    return 0;
+}
+`,
+  java: `public class Main {
+    public static void main(String[] args) {
+        for (int i = 1; i <= 5; i++) {
+            System.out.println("Number: " + i);
+        }
+    }
+}
+`,
+};
+
+type RunPhase = "idle" | "compiling" | "running" | "ok" | "error";
 
 function Fixora() {
   const [code, setCode] = useState(STARTER);
