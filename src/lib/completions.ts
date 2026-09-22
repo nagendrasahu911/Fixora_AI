@@ -2,7 +2,7 @@ import type { CompletionContext, CompletionResult, Completion } from "@codemirro
 import type { Diagnostic } from "@codemirror/lint";
 import type { EditorView } from "@codemirror/view";
 
-export type EditorLanguage = "python";
+export type EditorLanguage = "python" | "c" | "cpp" | "java";
 
 const kw = (label: string, detail: string, apply?: string): Completion => ({
   label,
@@ -117,21 +117,101 @@ const PLT: Completion[] = [
   "savefig(",
 ].map((s) => fn(s.replace("(", ""), `plt.${s})`, s + ")"));
 
-export function makeCompletionSource(_language: EditorLanguage = "python") {
+const C: Completion[] = [
+  fn("printf", 'printf("%d\\n", x)', 'printf("");'),
+  fn("scanf", 'scanf("%d", &x)', 'scanf("");'),
+  fn("malloc", "malloc(size)", "malloc()"),
+  fn("free", "free(ptr)", "free()"),
+  kw("#include <stdio.h>", "standard I/O"),
+  kw("#include <stdlib.h>", "standard library"),
+  kw("int", "integer type"),
+  kw("float", "float type"),
+  kw("char", "char type"),
+  kw("return", "return value"),
+  kw("if", "conditional"),
+  kw("else", "else branch"),
+  kw("while", "while loop"),
+  {
+    label: "main",
+    type: "text",
+    detail: "main function",
+    apply: "int main() {\n    \n    return 0;\n}",
+  },
+  {
+    label: "for loop",
+    type: "text",
+    detail: "counted loop",
+    apply: "for (int i = 0; i < 10; i++) {\n    \n}",
+  },
+];
+
+const CPP: Completion[] = [
+  fn("cout", "std::cout << x", "cout << "),
+  fn("cin", "std::cin >> x", "cin >> "),
+  fn("endl", "line break", "endl"),
+  kw("#include <iostream>", "I/O streams"),
+  kw("#include <vector>", "dynamic array"),
+  kw("#include <string>", "strings"),
+  kw("using namespace std;", "std namespace"),
+  {
+    label: "main",
+    type: "text",
+    detail: "main function",
+    apply: "int main() {\n    \n    return 0;\n}",
+  },
+  {
+    label: "for loop",
+    type: "text",
+    detail: "counted loop",
+    apply: "for (int i = 0; i < 10; i++) {\n    \n}",
+  },
+];
+
+const JAVA: Completion[] = [
+  fn("System.out.println", "print a line", "System.out.println();"),
+  fn("System.out.print", "print", "System.out.print();"),
+  kw("public", "access modifier"),
+  kw("static", "static member"),
+  kw("void", "no return value"),
+  kw("class", "define a class"),
+  kw("import java.util.Scanner;", "console input"),
+  {
+    label: "main",
+    type: "text",
+    detail: "entry point",
+    apply: "public static void main(String[] args) {\n    \n}",
+  },
+  {
+    label: "for loop",
+    type: "text",
+    detail: "counted loop",
+    apply: "for (int i = 0; i < 10; i++) {\n    \n}",
+  },
+];
+
+const BY_LANGUAGE: Record<EditorLanguage, Completion[]> = {
+  python: PYTHON,
+  c: C,
+  cpp: CPP,
+  java: JAVA,
+};
+
+export function makeCompletionSource(language: EditorLanguage = "python") {
   return (context: CompletionContext): CompletionResult | null => {
-    const dotted = context.matchBefore(/(np|numpy|plt|pyplot)\.\w*/);
-    if (dotted) {
-      const isNp = /^(np|numpy)\./.test(dotted.text);
-      return {
-        from: dotted.from + dotted.text.indexOf(".") + 1,
-        options: isNp ? NP : PLT,
-        validFor: /^\w*$/,
-      };
+    if (language === "python") {
+      const dotted = context.matchBefore(/(np|numpy|plt|pyplot)\.\w*/);
+      if (dotted) {
+        const isNp = /^(np|numpy)\./.test(dotted.text);
+        return {
+          from: dotted.from + dotted.text.indexOf(".") + 1,
+          options: isNp ? NP : PLT,
+          validFor: /^\w*$/,
+        };
+      }
     }
-    const word = context.matchBefore(/[\w#.]*/);
+    const word = context.matchBefore(/[\w#.<>]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
-    const options = PYTHON;
-    return { from: word.from, options, validFor: /^[\w#.]*$/ };
+    return { from: word.from, options: BY_LANGUAGE[language], validFor: /^[\w#.<>]*$/ };
   };
 }
 

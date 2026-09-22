@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { fixCode, completeCode, convertCode, voiceToCode } from "@/lib/fixora.functions";
+import { runNative, type NativeRunResult, type RunLanguage } from "@/lib/run.functions";
 import { runPython, type GraphType, type RunResult } from "@/lib/pyodide-runner";
 import {
   loadProjects,
@@ -117,8 +118,51 @@ const GRAPH_TYPES: { value: GraphType; label: string }[] = [
   { value: "box", label: "Box" },
 ];
 
+const LANGUAGES: { value: RunLanguage; label: string; file: string }[] = [
+  { value: "python", label: "Python", file: "main.py" },
+  { value: "c", label: "C", file: "main.c" },
+  { value: "cpp", label: "C++", file: "main.cpp" },
+  { value: "java", label: "Java", file: "Main.java" },
+];
+
+const STARTERS: Record<RunLanguage, string> = {
+  python: STARTER,
+  c: `#include <stdio.h>
+
+int main() {
+    for (int i = 1; i <= 5; i++) {
+        printf("Number: %d\\n", i);
+    }
+    return 0;
+}
+`,
+  cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    for (int i = 1; i <= 5; i++) {
+        cout << "Number: " << i << endl;
+    }
+    return 0;
+}
+`,
+  java: `public class Main {
+    public static void main(String[] args) {
+        for (int i = 1; i <= 5; i++) {
+            System.out.println("Number: " + i);
+        }
+    }
+}
+`,
+};
+
+type RunPhase = "idle" | "compiling" | "running" | "ok" | "error";
+
 function Fixora() {
   const [code, setCode] = useState(STARTER);
+  const [language, setLanguage] = useState<RunLanguage>("python");
+  const [native, setNative] = useState<(NativeRunResult & { fallback?: boolean }) | null>(null);
+  const [phase, setPhase] = useState<RunPhase>("idle");
   const [tab, setTab] = useState("console");
   const [enableGraph, setEnableGraph] = useState(true);
   const [graphType, setGraphType] = useState<GraphType>("auto");
@@ -159,6 +203,7 @@ function Fixora() {
   const callComplete = useServerFn(completeCode);
   const callConvert = useServerFn(convertCode);
   const callVoice = useServerFn(voiceToCode);
+  const callRunNative = useServerFn(runNative);
 
   // Code converter
   const [target, setTarget] = useState<"c" | "cpp" | "java">("c");
@@ -188,40 +233,79 @@ function Fixora() {
     );
   }, []);
 
+  const rewardRun = useCallback(() => {
+    const mult = challenge ? 2 : 1;
+    if (hadError.current && editedByUser.current) {
+      celebrate(award("manual-fix", mult), "you fixed it yourself!");
+      hadError.current = false;
+    } else {
+      celebrate(award("run", mult), "code ran successfully");
+    }
+    editedByUser.current = false;
+  }, [challenge, award, celebrate]);
+
+  const runPythonSource = useCallback(
+    async (source: string, fallback = false) => {
+      setPhase("running");
+      setStatus("Starting Python...");
+      const res = await runPython(source, { enableGraph, graphType }, setStatus);
+      setResult(res);
+      setNative(null);
+      lastError.current = res.error;
+      setPhase(res.error ? "error" : "ok");
+      setTab(res.error ? "console" : res.images.length ? "graph" : "console");
+      log({
+        kind: "run",
+        ok: !res.error,
+        label: res.error
+          ? "Run failed"
+          : `Ran ${fallback ? "converted Python" : "code"}${res.images.length ? " + graph" : ""}`,
+      });
+      if (res.error) hadError.current = true;
+      else rewardRun();
+    },
+    [enableGraph, graphType, log, rewardRun],
+  );
+
   const handleRun = useCallback(
     async (source = code) => {
       setRunning(true);
-      setStatus("Starting Python...");
       try {
-        const res = await runPython(source, { enableGraph, graphType }, setStatus);
-        setResult(res);
-        lastError.current = res.error;
-        setTab(res.error ? "console" : res.images.length ? "graph" : "console");
-        log({
-          kind: "run",
-          ok: !res.error,
-          label: res.error ? "Run failed" : `Ran code${res.images.length ? " + graph" : ""}`,
-        });
-        if (res.error) {
-          hadError.current = true;
-        } else {
-          const mult = challenge ? 2 : 1;
-          if (hadError.current && editedByUser.current) {
-            celebrate(award("manual-fix", mult), "you fixed it yourself!");
-            hadError.current = false;
-          } else {
-            celebrate(award("run", mult), "code ran successfully");
-          }
-          editedByUser.current = false;
+        if (language === "python") {
+          await runPythonSource(source);
+          return;
+        }
+
+        const label = LANGUAGES.find((l) => l.value === language)!.label;
+        setPhase("compiling");
+        setStatus(`Compiling ${label}…`);
+        try {
+          const res = await callRunNative({ data: { language, code: source } });
+          setNative(res);
+          setResult(null);
+          lastError.current = res.compileError || (res.ok ? null : res.stderr) || null;
+          setPhase(res.ok ? "ok" : "error");
+          setTab("console");
+          log({ kind: "run", ok: res.ok, label: res.ok ? `Ran ${label}` : `${label} failed` });
+          if (res.ok) rewardRun();
+          else hadError.current = true;
+        } catch {
+          toast.warning("Native execution not available, running converted version");
+          setStatus("Converting to Python…");
+          const conv = await callConvert({ data: { code: source, target: "python" } });
+          await runPythonSource(conv.converted, true);
+          setNative((n) => n ?? null);
+          toast.info(`Output above is the converted Python version of your ${label} code.`);
         }
       } catch (e) {
+        setPhase("error");
         toast.error(e instanceof Error ? e.message : "Could not run the code.");
       } finally {
         setRunning(false);
         setStatus(null);
       }
     },
-    [code, enableGraph, graphType, log, challenge, award, celebrate],
+    [code, language, runPythonSource, callRunNative, callConvert, log, rewardRun],
   );
 
   const handleFix = useCallback(async () => {
@@ -440,13 +524,35 @@ function Fixora() {
           </Label>
         </div>
 
+        <Select value={language} onValueChange={(v) => changeLanguage(v as RunLanguage)}>
+          <SelectTrigger className="w-[130px]" aria-label="Select language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((l) => (
+              <SelectItem key={l.value} value={l.value}>
+                {l.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <div className="neon-frame flex items-center gap-2 px-3 py-1.5">
-          <Switch id="graph" checked={enableGraph} onCheckedChange={setEnableGraph} />
+          <Switch
+            id="graph"
+            checked={enableGraph && isPython}
+            disabled={!isPython}
+            onCheckedChange={setEnableGraph}
+          />
           <Label htmlFor="graph" className="text-xs">
             Enable Graph
           </Label>
         </div>
-        <Select value={graphType} onValueChange={(v) => setGraphType(v as GraphType)}>
+        <Select
+          value={graphType}
+          onValueChange={(v) => setGraphType(v as GraphType)}
+          disabled={!isPython}
+        >
           <SelectTrigger className="w-[150px]" aria-label="Select graph type">
             <SelectValue />
           </SelectTrigger>
@@ -458,6 +564,8 @@ function Fixora() {
             ))}
           </SelectContent>
         </Select>
+
+        <StatusPill phase={phase} />
 
         <Button className="glow-run ripple" onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
