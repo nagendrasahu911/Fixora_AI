@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
+import { cpp } from "@codemirror/lang-cpp";
+import { java } from "@codemirror/lang-java";
 import { autocompletion } from "@codemirror/autocomplete";
 import { linter, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
@@ -15,13 +17,19 @@ interface Props {
   fetchSuggestion?: SuggestFetcher;
 }
 
+function langExtension(language: EditorLanguage) {
+  if (language === "java") return java();
+  if (language === "c" || language === "cpp") return cpp();
+  return python();
+}
+
 export function CodeEditor({ value, onChange, language = "python", fetchSuggestion }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const extensions = useMemo(
     () => [
-      python(),
+      langExtension(language),
       ...(fetchSuggestion ? inlineSuggestion(fetchSuggestion) : []),
       autocompletion({
         override: [makeCompletionSource(language)],
