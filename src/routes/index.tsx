@@ -524,13 +524,35 @@ function Fixora() {
           </Label>
         </div>
 
+        <Select value={language} onValueChange={(v) => changeLanguage(v as RunLanguage)}>
+          <SelectTrigger className="w-[130px]" aria-label="Select language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((l) => (
+              <SelectItem key={l.value} value={l.value}>
+                {l.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <div className="neon-frame flex items-center gap-2 px-3 py-1.5">
-          <Switch id="graph" checked={enableGraph} onCheckedChange={setEnableGraph} />
+          <Switch
+            id="graph"
+            checked={enableGraph && isPython}
+            disabled={!isPython}
+            onCheckedChange={setEnableGraph}
+          />
           <Label htmlFor="graph" className="text-xs">
             Enable Graph
           </Label>
         </div>
-        <Select value={graphType} onValueChange={(v) => setGraphType(v as GraphType)}>
+        <Select
+          value={graphType}
+          onValueChange={(v) => setGraphType(v as GraphType)}
+          disabled={!isPython}
+        >
           <SelectTrigger className="w-[150px]" aria-label="Select graph type">
             <SelectValue />
           </SelectTrigger>
@@ -542,6 +564,8 @@ function Fixora() {
             ))}
           </SelectContent>
         </Select>
+
+        <StatusPill phase={phase} />
 
         <Button className="glow-run ripple" onClick={() => void handleRun()} disabled={running}>
           {running ? <Loader2 className="animate-spin" /> : <Play />} Run
