@@ -99,7 +99,7 @@ export const completeCode = createServerFn({ method: "POST" })
 
 const ConvertInput = z.object({
   code: z.string(),
-  target: z.enum(["c", "cpp", "java"]),
+  target: z.enum(["c", "cpp", "java", "python"]),
 });
 
 export const convertCode = createServerFn({ method: "POST" })
@@ -109,12 +109,12 @@ export const convertCode = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI is not configured.");
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
-    const names = { c: "C", cpp: "C++", java: "Java" } as const;
+    const names = { c: "C", cpp: "C++", java: "Java", python: "Python" } as const;
 
     const result = streamText({
       model: gateway("google/gemini-3.7-flash"),
       system:
-        `You convert Python source into ${names[data.target]}. ` +
+        `You convert source code from any language into ${names[data.target]}. ` +
         "Preserve the exact logic and behaviour. Add all required boilerplate " +
         "(includes/imports, main function, class wrapper for Java). Use idiomatic, compilable code. " +
         "Return ONLY the converted source code, no markdown fences, no commentary.",
