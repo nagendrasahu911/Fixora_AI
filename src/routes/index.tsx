@@ -160,6 +160,9 @@ type RunPhase = "idle" | "compiling" | "running" | "ok" | "error";
 
 function Fixora() {
   const [code, setCode] = useState(STARTER);
+  const [language, setLanguage] = useState<RunLanguage>("python");
+  const [native, setNative] = useState<(NativeRunResult & { fallback?: boolean }) | null>(null);
+  const [phase, setPhase] = useState<RunPhase>("idle");
   const [tab, setTab] = useState("console");
   const [enableGraph, setEnableGraph] = useState(true);
   const [graphType, setGraphType] = useState<GraphType>("auto");
@@ -229,40 +232,79 @@ function Fixora() {
     );
   }, []);
 
+  const rewardRun = useCallback(() => {
+    const mult = challenge ? 2 : 1;
+    if (hadError.current && editedByUser.current) {
+      celebrate(award("manual-fix", mult), "you fixed it yourself!");
+      hadError.current = false;
+    } else {
+      celebrate(award("run", mult), "code ran successfully");
+    }
+    editedByUser.current = false;
+  }, [challenge, award, celebrate]);
+
+  const runPythonSource = useCallback(
+    async (source: string, fallback = false) => {
+      setPhase("running");
+      setStatus("Starting Python...");
+      const res = await runPython(source, { enableGraph, graphType }, setStatus);
+      setResult(res);
+      setNative(null);
+      lastError.current = res.error;
+      setPhase(res.error ? "error" : "ok");
+      setTab(res.error ? "console" : res.images.length ? "graph" : "console");
+      log({
+        kind: "run",
+        ok: !res.error,
+        label: res.error
+          ? "Run failed"
+          : `Ran ${fallback ? "converted Python" : "code"}${res.images.length ? " + graph" : ""}`,
+      });
+      if (res.error) hadError.current = true;
+      else rewardRun();
+    },
+    [enableGraph, graphType, log, rewardRun],
+  );
+
   const handleRun = useCallback(
     async (source = code) => {
       setRunning(true);
-      setStatus("Starting Python...");
       try {
-        const res = await runPython(source, { enableGraph, graphType }, setStatus);
-        setResult(res);
-        lastError.current = res.error;
-        setTab(res.error ? "console" : res.images.length ? "graph" : "console");
-        log({
-          kind: "run",
-          ok: !res.error,
-          label: res.error ? "Run failed" : `Ran code${res.images.length ? " + graph" : ""}`,
-        });
-        if (res.error) {
-          hadError.current = true;
-        } else {
-          const mult = challenge ? 2 : 1;
-          if (hadError.current && editedByUser.current) {
-            celebrate(award("manual-fix", mult), "you fixed it yourself!");
-            hadError.current = false;
-          } else {
-            celebrate(award("run", mult), "code ran successfully");
-          }
-          editedByUser.current = false;
+        if (language === "python") {
+          await runPythonSource(source);
+          return;
+        }
+
+        const label = LANGUAGES.find((l) => l.value === language)!.label;
+        setPhase("compiling");
+        setStatus(`Compiling ${label}…`);
+        try {
+          const res = await callRunNative({ data: { language, code: source } });
+          setNative(res);
+          setResult(null);
+          lastError.current = res.compileError || (res.ok ? null : res.stderr) || null;
+          setPhase(res.ok ? "ok" : "error");
+          setTab("console");
+          log({ kind: "run", ok: res.ok, label: res.ok ? `Ran ${label}` : `${label} failed` });
+          if (res.ok) rewardRun();
+          else hadError.current = true;
+        } catch {
+          toast.warning("Native execution not available, running converted version");
+          setStatus("Converting to Python…");
+          const conv = await callConvert({ data: { code: source, target: "python" } });
+          await runPythonSource(conv.converted, true);
+          setNative((n) => n ?? null);
+          toast.info(`Output above is the converted Python version of your ${label} code.`);
         }
       } catch (e) {
+        setPhase("error");
         toast.error(e instanceof Error ? e.message : "Could not run the code.");
       } finally {
         setRunning(false);
         setStatus(null);
       }
     },
-    [code, enableGraph, graphType, log, challenge, award, celebrate],
+    [code, language, runPythonSource, callRunNative, callConvert, log, rewardRun],
   );
 
   const handleFix = useCallback(async () => {
