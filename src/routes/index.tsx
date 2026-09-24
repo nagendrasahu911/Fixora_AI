@@ -205,6 +205,20 @@ function Fixora() {
   const callVoice = useServerFn(voiceToCode);
   const callRunNative = useServerFn(runNative);
 
+  const isPython = language === "python";
+
+  const changeLanguage = useCallback((next: RunLanguage) => {
+    setLanguage(next);
+    setCode(STARTERS[next]);
+    setNative(null);
+    setResult(null);
+    setAiFix(null);
+    setPhase("idle");
+    setStatus(null);
+    lastError.current = null;
+    setTab("console");
+  }, []);
+
   // Code converter
   const [target, setTarget] = useState<"c" | "cpp" | "java">("c");
   const [converting, setConverting] = useState(false);
@@ -276,7 +290,7 @@ function Fixora() {
           return;
         }
 
-        const label = LANGUAGES.find((l) => l.value === language)!.label;
+        const label = LANGUAGES.find((l) => l.value === language)?.label ?? language;
         setPhase("compiling");
         setStatus(`Compiling ${label}…`);
         try {
@@ -449,12 +463,12 @@ function Fixora() {
   }, [callVoice, transcript]);
 
   const doSaveProject = useCallback(() => {
-    setProjects(saveProject(projectName, code));
+    setProjects(saveProject(projectName, code, language));
     setSaveOpen(false);
     toast.success("Project saved.");
-  }, [projectName, code]);
+  }, [projectName, code, language]);
 
-  const fileName = "main.py";
+  const fileName = LANGUAGES.find((l) => l.value === language)?.file ?? "main.py";
 
   const download = () => {
     const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
@@ -940,6 +954,25 @@ function XpRing({ percent, level }: { percent: number; level: number }) {
         {level}
       </span>
     </div>
+  );
+}
+
+function StatusPill({ phase }: { phase: RunPhase }) {
+  if (phase === "idle") return null;
+
+  const config = {
+    compiling: { label: "Compiling", className: "border-warning/40 text-warning", icon: Loader2 },
+    running: { label: "Running", className: "border-accent/40 text-accent", icon: Loader2 },
+    ok: { label: "Ready", className: "border-success/40 text-success", icon: Check },
+    error: { label: "Error", className: "border-destructive/40 text-destructive", icon: Eraser },
+  }[phase];
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={`gap-1.5 whitespace-nowrap ${config.className}`}>
+      <Icon className={`size-3.5 ${phase === "compiling" || phase === "running" ? "animate-spin" : ""}`} />
+      {config.label}
+    </Badge>
   );
 }
 
