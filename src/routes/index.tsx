@@ -957,6 +957,25 @@ function XpRing({ percent, level }: { percent: number; level: number }) {
   );
 }
 
+function StatusPill({ phase }: { phase: RunPhase }) {
+  if (phase === "idle") return null;
+
+  const config = {
+    compiling: { label: "Compiling", className: "border-warning/40 text-warning", icon: Loader2 },
+    running: { label: "Running", className: "border-accent/40 text-accent", icon: Loader2 },
+    ok: { label: "Ready", className: "border-success/40 text-success", icon: Check },
+    error: { label: "Error", className: "border-destructive/40 text-destructive", icon: Eraser },
+  }[phase];
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={`gap-1.5 whitespace-nowrap ${config.className}`}>
+      <Icon className={`size-3.5 ${phase === "compiling" || phase === "running" ? "animate-spin" : ""}`} />
+      {config.label}
+    </Badge>
+  );
+}
+
 function Empty({ text }: { text: string }) {
   return (
     <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 text-center">
