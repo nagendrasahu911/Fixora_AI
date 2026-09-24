@@ -205,6 +205,20 @@ function Fixora() {
   const callVoice = useServerFn(voiceToCode);
   const callRunNative = useServerFn(runNative);
 
+  const isPython = language === "python";
+
+  const changeLanguage = useCallback((next: RunLanguage) => {
+    setLanguage(next);
+    setCode(STARTERS[next]);
+    setNative(null);
+    setResult(null);
+    setAiFix(null);
+    setPhase("idle");
+    setStatus(null);
+    lastError.current = null;
+    setTab("console");
+  }, []);
+
   // Code converter
   const [target, setTarget] = useState<"c" | "cpp" | "java">("c");
   const [converting, setConverting] = useState(false);
@@ -276,7 +290,7 @@ function Fixora() {
           return;
         }
 
-        const label = LANGUAGES.find((l) => l.value === language)!.label;
+        const label = LANGUAGES.find((l) => l.value === language)?.label ?? language;
         setPhase("compiling");
         setStatus(`Compiling ${label}…`);
         try {
@@ -449,12 +463,12 @@ function Fixora() {
   }, [callVoice, transcript]);
 
   const doSaveProject = useCallback(() => {
-    setProjects(saveProject(projectName, code));
+    setProjects(saveProject(projectName, code, language));
     setSaveOpen(false);
     toast.success("Project saved.");
-  }, [projectName, code]);
+  }, [projectName, code, language]);
 
-  const fileName = "main.py";
+  const fileName = LANGUAGES.find((l) => l.value === language)?.file ?? "main.py";
 
   const download = () => {
     const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
